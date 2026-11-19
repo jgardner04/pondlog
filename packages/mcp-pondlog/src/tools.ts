@@ -8,7 +8,6 @@ import {
   type Result,
   type TideEvent,
 } from "@pondlog/core";
-import { getNearbyRecentNormalized } from "@pondlog/source-ebird";
 import { getNearbyObservations } from "@pondlog/source-inaturalist";
 import { getActivePhenologyNearby } from "@pondlog/source-npn";
 import { getTonightsBriefing } from "@pondlog/source-nightsky";
@@ -16,7 +15,7 @@ import {
   getInstantaneousValues,
   type NormalizedUsgsReading,
 } from "@pondlog/source-usgs";
-import { buildBriefing, withEbirdApiKey } from "./briefing.js";
+import { buildBriefing, ebirdFor } from "./briefing.js";
 import { failure, success } from "./respond.js";
 import {
   daysField,
@@ -68,15 +67,14 @@ function registerGetNatureBriefing(server: McpServer): void {
       const usgsSite = args.usgs_site ?? process.env.USGS_SITE;
       const moRegion =
         args.mushroom_observer_region ?? process.env.MUSHROOM_OBSERVER_REGION;
-      const briefing = await withEbirdApiKey(args.ebird_api_key, () =>
-        buildBriefing({
-          coords: { lat: args.lat, lng: args.lng },
-          ...(date ? { date } : {}),
-          ...(noaaStation ? { noaaStation } : {}),
-          ...(usgsSite ? { usgsSite } : {}),
-          ...(moRegion ? { mushroomObserverRegion: moRegion } : {}),
-        }),
-      );
+      const briefing = await buildBriefing({
+        coords: { lat: args.lat, lng: args.lng },
+        ...(date ? { date } : {}),
+        ...(noaaStation ? { noaaStation } : {}),
+        ...(usgsSite ? { usgsSite } : {}),
+        ...(moRegion ? { mushroomObserverRegion: moRegion } : {}),
+        ebird: ebirdFor(args.ebird_api_key),
+      });
       return success(briefing);
     },
   );
@@ -105,21 +103,16 @@ function registerGetNearbyWildlife(server: McpServer): void {
       const radiusKm = args.radius_km ?? 25;
       const days = args.days ?? 7;
 
-      const [inatRes, ebirdRes] = await withEbirdApiKey(
-        args.ebird_api_key,
-        async () => {
-          const inatPromise = getNearbyObservations(coords, radiusKm, days);
-          const ebirdPromise = getNearbyRecentNormalized(
-            coords.lat,
-            coords.lng,
-            { dist: radiusKm, back: days },
-          );
-          return Promise.all([
-            inatPromise.catch(captureSettled<Observation[]>("inaturalist")),
-            ebirdPromise.catch(captureSettled<Observation[]>("ebird")),
-          ]);
-        },
+      const inatPromise = getNearbyObservations(coords, radiusKm, days);
+      const ebirdPromise = ebirdFor(args.ebird_api_key).getNearbyRecentNormalized(
+        coords.lat,
+        coords.lng,
+        { dist: radiusKm, back: days },
       );
+      const [inatRes, ebirdRes] = await Promise.all([
+        inatPromise.catch(captureSettled<Observation[]>("inaturalist")),
+        ebirdPromise.catch(captureSettled<Observation[]>("ebird")),
+      ]);
 
       const observations: Observation[] = [];
       const errors: { source: string; message: string }[] = [];
