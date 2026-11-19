@@ -1,13 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  getHistoricOnDate,
-  getNearbyNotable,
-  getNearbyOfSpecies,
-  getNearbyRecent,
-  getRecentNotable,
-  getRecentObservations,
-  getRecentOfSpecies,
-} from "@pondlog/source-ebird";
+import type { EbirdClient } from "@pondlog/source-ebird";
 import { z } from "zod";
 import { failure, success } from "../respond.js";
 import {
@@ -43,7 +35,7 @@ const restrictToLocs = z
     "Restrict to specific eBird locIds (single or array). When set, results are filtered to these locations. Useful when you already know the locId of a hotspot from `get_hotspots_in_region`.",
   );
 
-export function registerObservationTools(server: McpServer): void {
+export function registerObservationTools(server: McpServer, ebird: EbirdClient): void {
   server.registerTool(
     "get_recent_observations",
     {
@@ -67,7 +59,7 @@ export function registerObservationTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getRecentObservations(args.region_code, {
+      const result = await ebird.getRecentObservations(args.region_code, {
         ...(args.back !== undefined ? { back: args.back } : {}),
         ...(args.cat ? { cat: args.cat } : {}),
         ...(args.hotspot !== undefined ? { hotspot: args.hotspot } : {}),
@@ -104,7 +96,7 @@ export function registerObservationTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getRecentNotable(args.region_code, {
+      const result = await ebird.getRecentNotable(args.region_code, {
         ...(args.back !== undefined ? { back: args.back } : {}),
         ...(args.detail ? { detail: args.detail } : {}),
         ...(args.hotspot !== undefined ? { hotspot: args.hotspot } : {}),
@@ -139,7 +131,7 @@ export function registerObservationTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getRecentOfSpecies(args.region_code, args.species_code, {
+      const result = await ebird.getRecentOfSpecies(args.region_code, args.species_code, {
         ...(args.back !== undefined ? { back: args.back } : {}),
         ...(args.hotspot !== undefined ? { hotspot: args.hotspot } : {}),
         ...(args.include_provisional !== undefined
@@ -178,7 +170,7 @@ export function registerObservationTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getNearbyRecent(args.lat, args.lng, {
+      const result = await ebird.getNearbyRecent(args.lat, args.lng, {
         ...(args.dist !== undefined ? { dist: args.dist } : {}),
         ...(args.back !== undefined ? { back: args.back } : {}),
         ...(args.cat ? { cat: args.cat } : {}),
@@ -217,7 +209,7 @@ export function registerObservationTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getNearbyNotable(args.lat, args.lng, {
+      const result = await ebird.getNearbyNotable(args.lat, args.lng, {
         ...(args.dist !== undefined ? { dist: args.dist } : {}),
         ...(args.back !== undefined ? { back: args.back } : {}),
         ...(args.detail ? { detail: args.detail } : {}),
@@ -253,7 +245,7 @@ export function registerObservationTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getNearbyOfSpecies(args.lat, args.lng, args.species_code, {
+      const result = await ebird.getNearbyOfSpecies(args.lat, args.lng, args.species_code, {
         ...(args.dist !== undefined ? { dist: args.dist } : {}),
         ...(args.back !== undefined ? { back: args.back } : {}),
         ...(args.hotspot !== undefined ? { hotspot: args.hotspot } : {}),
@@ -298,7 +290,7 @@ export function registerObservationTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getHistoricOnDate(
+      const result = await ebird.getHistoricOnDate(
         args.region_code,
         args.year,
         args.month,

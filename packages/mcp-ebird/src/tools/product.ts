@@ -1,9 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  getChecklist,
-  getRecentChecklists,
-  getTop100,
-} from "@pondlog/source-ebird";
+import type { EbirdClient } from "@pondlog/source-ebird";
 import { z } from "zod";
 import { failure, success } from "../respond.js";
 import {
@@ -17,7 +13,7 @@ import {
 
 const READ_ONLY = { readOnlyHint: true, openWorldHint: true } as const;
 
-export function registerProductTools(server: McpServer): void {
+export function registerProductTools(server: McpServer, ebird: EbirdClient): void {
   server.registerTool(
     "get_recent_checklists",
     {
@@ -38,7 +34,7 @@ export function registerProductTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getRecentChecklists(args.region_code, {
+      const result = await ebird.getRecentChecklists(args.region_code, {
         ...(args.max_results !== undefined ? { maxResults: args.max_results } : {}),
       });
       return result.ok ? success(result.data) : failure(result.error);
@@ -73,7 +69,7 @@ export function registerProductTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getTop100(args.region_code, args.year, args.month, args.day, {
+      const result = await ebird.getTop100(args.region_code, args.year, args.month, args.day, {
         ...(args.ranked_by ? { rankedBy: args.ranked_by } : {}),
         ...(args.max_results !== undefined ? { maxResults: args.max_results } : {}),
       });
@@ -94,7 +90,7 @@ export function registerProductTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async ({ sub_id }) => {
-      const result = await getChecklist(sub_id);
+      const result = await ebird.getChecklist(sub_id);
       return result.ok ? success(result.data) : failure(result.error);
     },
   );

@@ -1,9 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  getHotspotInfo,
-  getHotspotsInRegion,
-  getNearbyHotspots,
-} from "@pondlog/source-ebird";
+import type { EbirdClient } from "@pondlog/source-ebird";
 import { failure, success } from "../respond.js";
 import {
   backField,
@@ -17,7 +13,7 @@ import {
 
 const READ_ONLY = { readOnlyHint: true, openWorldHint: true } as const;
 
-export function registerHotspotTools(server: McpServer): void {
+export function registerHotspotTools(server: McpServer, ebird: EbirdClient): void {
   server.registerTool(
     "get_hotspots_in_region",
     {
@@ -34,7 +30,7 @@ export function registerHotspotTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getHotspotsInRegion(args.region_code, {
+      const result = await ebird.getHotspotsInRegion(args.region_code, {
         ...(args.back !== undefined ? { back: args.back } : {}),
       });
       return result.ok ? success(result.data) : failure(result.error);
@@ -59,7 +55,7 @@ export function registerHotspotTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getNearbyHotspots(args.lat, args.lng, {
+      const result = await ebird.getNearbyHotspots(args.lat, args.lng, {
         ...(args.dist !== undefined ? { dist: args.dist } : {}),
         ...(args.back !== undefined ? { back: args.back } : {}),
       });
@@ -80,7 +76,7 @@ export function registerHotspotTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async ({ loc_id }) => {
-      const result = await getHotspotInfo(loc_id);
+      const result = await ebird.getHotspotInfo(loc_id);
       return result.ok ? success(result.data) : failure(result.error);
     },
   );

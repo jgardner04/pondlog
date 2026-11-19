@@ -1,11 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  getTaxaLocales,
-  getTaxonomicForms,
-  getTaxonomicGroups,
-  getTaxonomy,
-  getTaxonomyVersions,
-} from "@pondlog/source-ebird";
+import type { EbirdClient } from "@pondlog/source-ebird";
 import { z } from "zod";
 import { failure, success } from "../respond.js";
 import {
@@ -16,7 +10,7 @@ import {
 
 const READ_ONLY = { readOnlyHint: true, openWorldHint: true } as const;
 
-export function registerTaxonomyTools(server: McpServer): void {
+export function registerTaxonomyTools(server: McpServer, ebird: EbirdClient): void {
   server.registerTool(
     "get_taxonomy",
     {
@@ -48,7 +42,7 @@ export function registerTaxonomyTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getTaxonomy({
+      const result = await ebird.getTaxonomy({
         ...(args.cat ? { cat: args.cat } : {}),
         ...(args.species ? { species: args.species } : {}),
         ...(args.locale ? { locale: args.locale } : {}),
@@ -70,7 +64,7 @@ export function registerTaxonomyTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async ({ species_code }) => {
-      const result = await getTaxonomicForms(species_code);
+      const result = await ebird.getTaxonomicForms(species_code);
       return result.ok ? success(result.data) : failure(result.error);
     },
   );
@@ -85,7 +79,7 @@ export function registerTaxonomyTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async () => {
-      const result = await getTaxaLocales();
+      const result = await ebird.getTaxaLocales();
       return result.ok ? success(result.data) : failure(result.error);
     },
   );
@@ -100,7 +94,7 @@ export function registerTaxonomyTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async () => {
-      const result = await getTaxonomyVersions();
+      const result = await ebird.getTaxonomyVersions();
       return result.ok ? success(result.data) : failure(result.error);
     },
   );
@@ -121,7 +115,7 @@ export function registerTaxonomyTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getTaxonomicGroups(args.grouping, {
+      const result = await ebird.getTaxonomicGroups(args.grouping, {
         ...(args.group_name_locale ? { groupNameLocale: args.group_name_locale } : {}),
       });
       return result.ok ? success(result.data) : failure(result.error);
