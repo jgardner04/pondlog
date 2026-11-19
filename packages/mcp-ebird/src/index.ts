@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { assertEbirdApiKey } from "@pondlog/source-ebird";
 import { buildServer } from "./server.js";

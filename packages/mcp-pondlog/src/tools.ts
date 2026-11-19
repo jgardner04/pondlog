@@ -15,7 +15,7 @@ import {
   getInstantaneousValues,
   type NormalizedUsgsReading,
 } from "@pondlog/source-usgs";
-import { buildBriefing, ebirdFor } from "./briefing.js";
+import { buildBriefing, ebirdFor, type EbirdSource } from "./briefing.js";
 import { failure, success } from "./respond.js";
 import {
   daysField,
@@ -32,15 +32,32 @@ import {
 
 const READ_ONLY = { readOnlyHint: true, openWorldHint: true } as const;
 
-export function registerAllTools(server: McpServer): void {
-  registerGetNatureBriefing(server);
-  registerGetNearbyWildlife(server);
+export interface RegisterToolsOptions {
+  /**
+   * eBird client for every eBird call. When given, it is the only key
+   * source: the `ebird_api_key` tool input is not offered and
+   * `process.env.EBIRD_API_KEY` is not read. Use this when one process serves
+   * several people, each with their own key.
+   */
+  ebird?: EbirdSource;
+}
+
+/** eBird key note for tool descriptions, matching how keys arrive. */
+function ebirdKeyNote(injected: boolean): string {
+  return injected
+    ? "eBird uses the key configured for this connection."
+    : "eBird requires a free API key (EBIRD_API_KEY env var or `ebird_api_key` input).";
+}
+
+export function registerAllTools(server: McpServer, options: RegisterToolsOptions = {}): void {
+  registerGetNatureBriefing(server, options.ebird);
+  registerGetNearbyWildlife(server, options.ebird);
   registerGetWaterConditions(server);
   registerGetTonightSky(server);
   registerGetPhenology(server);
 }
 
-function registerGetNatureBriefing(server: McpServer): void {
+function registerGetNatureBriefing(server: McpServer, injected: EbirdSource | undefined): void {
   server.registerTool(
     "get_nature_briefing",
     {
@@ -49,14 +66,16 @@ function registerGetNatureBriefing(server: McpServer): void {
         "Returns a complete nature briefing for a location, birds, wildlife, fungi, plants, tides, streamflow, night sky, and phenology stitched from seven data sources (iNaturalist, eBird, Mushroom Observer, NOAA, USGS, NPN, astronomy-engine) into one response. " +
         "All seven sources are fetched in parallel; partial failures are reported in the `errors` array without crashing the briefing. " +
         "This is the primary tool: one call replaces seven API integrations. For drilling into a single area, prefer the focused tools `get_nearby_wildlife`, `get_water_conditions`, `get_tonight_sky`, or `get_phenology`. " +
-        "Tides require a NOAA station id; streamflow requires a USGS site number, pass them in or set NOAA_STATION / USGS_SITE env vars. eBird requires a free API key (EBIRD_API_KEY env var or `ebird_api_key` input). Mushroom Observer needs no key.",
+        "Tides require a NOAA station id; streamflow requires a USGS site number, pass them in or set NOAA_STATION / USGS_SITE env vars. " +
+        ebirdKeyNote(injected !== undefined) +
+        " Mushroom Observer needs no key.",
       inputSchema: {
         lat: latField,
         lng: lngField,
         date: dateField.optional(),
         noaa_station: noaaStationField.optional(),
         usgs_site: usgsSiteField.optional(),
-        ebird_api_key: ebirdApiKeyField.optional(),
+        ...(injected ? {} : { ebird_api_key: ebirdApiKeyField.optional() }),
         mushroom_observer_region: mushroomObserverRegionField.optional(),
       },
       annotations: READ_ONLY,
@@ -73,14 +92,14 @@ function registerGetNatureBriefing(server: McpServer): void {
         ...(noaaStation ? { noaaStation } : {}),
         ...(usgsSite ? { usgsSite } : {}),
         ...(moRegion ? { mushroomObserverRegion: moRegion } : {}),
-        ebird: ebirdFor(args.ebird_api_key),
+        ebird: injected ?? ebirdFor(keyInput(args)),
       });
       return success(briefing);
     },
   );
 }
 
-function registerGetNearbyWildlife(server: McpServer): void {
+function registerGetNearbyWildlife(server: McpServer, injected: EbirdSource | undefined): void {
   server.registerTool(
     "get_nearby_wildlife",
     {
@@ -88,13 +107,14 @@ function registerGetNearbyWildlife(server: McpServer): void {
       description:
         "Combined feed of recent wildlife sightings near a location. Merges iNaturalist observations (all taxa, citizen-science) with eBird observations (birds, expert-curated) into one chronologically-sorted list. " +
         "Use this when the caller asks 'what's been seen near me' without specifying birds-only or invertebrates-only. For finer control (taxon filters, date ranges) use the per-source MCP servers (`@pondlog/mcp-inaturalist`, `@pondlog/mcp-ebird`). " +
-        "eBird requires a free API key (EBIRD_API_KEY env var or `ebird_api_key` input). Without it, only the iNaturalist half populates and an `ebird` entry appears in `errors[]`.",
+        ebirdKeyNote(injected !== undefined) +
+        " Without a key, only the iNaturalist half populates and an `ebird` entry appears in `errors[]`.",
       inputSchema: {
         lat: latField,
         lng: lngField,
         radius_km: radiusField.optional().describe("Default 25 km."),
         days: daysField.optional().describe("Default 7 days."),
-        ebird_api_key: ebirdApiKeyField.optional(),
+        ...(injected ? {} : { ebird_api_key: ebirdApiKeyField.optional() }),
       },
       annotations: READ_ONLY,
     },
@@ -104,7 +124,7 @@ function registerGetNearbyWildlife(server: McpServer): void {
       const days = args.days ?? 7;
 
       const inatPromise = getNearbyObservations(coords, radiusKm, days);
-      const ebirdPromise = ebirdFor(args.ebird_api_key).getNearbyRecentNormalized(
+      const ebirdPromise = (injected ?? ebirdFor(keyInput(args))).getNearbyRecentNormalized(
         coords.lat,
         coords.lng,
         { dist: radiusKm, back: days },
@@ -285,6 +305,12 @@ function registerGetPhenology(server: McpServer): void {
 
 // ----------------------------------------------------------------------------
 // helpers
+
+/** The `ebird_api_key` input, which only exists when no client is injected. */
+function keyInput(args: object): string | undefined {
+  const key = (args as { ebird_api_key?: unknown }).ebird_api_key;
+  return typeof key === "string" ? key : undefined;
+}
 
 function parseDate(s: string | undefined): Date | undefined {
   if (s === undefined) return undefined;

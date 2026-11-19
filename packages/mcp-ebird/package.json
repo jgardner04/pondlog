@@ -29,7 +29,15 @@
     "url": "https://github.com/andrewschristison/pondlog/issues"
   },
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/lib.js",
+  "types": "./dist/lib.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js"
+    },
+    "./package.json": "./package.json"
+  },
   "bin": {
     "pondlog-mcp-ebird": "dist/index.js"
   },
@@ -48,7 +56,7 @@
   },
   "dependencies": {
     "@cropgraph/core": "^3.0.0",
-    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@modelcontextprotocol/sdk": "^1.25.0",
     "@pondlog/core": "workspace:^",
     "@pondlog/source-ebird": "workspace:^",
     "zod": "^3.23.8"

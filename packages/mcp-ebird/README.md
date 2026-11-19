@@ -146,6 +146,27 @@ After configuring, try:
 - *Find all subspecies of the Yellow-rumped Warbler.*
 - *What counties border Clallam County (US-WA-009)?*
 
+## Use as a library
+
+The package's import entry builds the server without starting a transport,
+so you can serve it over another transport (for example Streamable HTTP):
+
+```ts
+import { buildServer } from "@pondlog/mcp-ebird";
+
+const server = buildServer();
+await server.connect(myTransport);
+```
+
+To serve several people from one process, give each caller their own eBird
+key instead of `EBIRD_API_KEY`:
+
+```ts
+import { createEbirdClient } from "@pondlog/source-ebird";
+
+const server = buildServer({ ebird: createEbirdClient({ getApiKey: () => user.ebirdKey }) });
+```
+
 ## License
 
 MIT. See the root [LICENSE](https://github.com/andrewschristison/pondlog).
