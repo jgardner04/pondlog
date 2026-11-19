@@ -5,7 +5,6 @@
 # both run. Keep it in step with the agent-workspace block of .gitignore.
 .agents
 .claude
-CLAUDE.md
 governance
 STICKIES.md
 SESSION_HANDOFF.md
