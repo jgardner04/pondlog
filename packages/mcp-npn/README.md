@@ -115,6 +115,18 @@ After configuring, try:
 - Avoid calling `get_observations` without species filtering. Single station-year results can be 80+ MB.
 - All tools return the same `Result<T>`-style envelope. Success returns `{ ok: true, data }`; error returns `isError: true` with structured `{ ok: false, error: { source, message, statusCode? } }`.
 
+## Use as a library
+
+The package's import entry builds the server without starting a transport,
+so you can serve it over another transport (for example Streamable HTTP):
+
+```ts
+import { buildServer } from "@pondlog/mcp-npn";
+
+const server = buildServer();
+await server.connect(myTransport);
+```
+
 ## License
 
 MIT. See the root [LICENSE](https://github.com/andrewschristison/pondlog).

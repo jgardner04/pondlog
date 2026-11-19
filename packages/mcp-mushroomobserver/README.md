@@ -99,6 +99,18 @@ After configuring, try:
 - For broader region discovery use `search_regions` to enumerate location-name suffixes. This is the only path to discovering MO's geography programmatically.
 - All tools return the same `Result<T>` envelope. Success returns `{ ok: true, data }`; error returns `isError: true` with `{ ok: false, error: { source, message, statusCode? } }`.
 
+## Use as a library
+
+The package's import entry builds the server without starting a transport,
+so you can serve it over another transport (for example Streamable HTTP):
+
+```ts
+import { buildServer } from "@pondlog/mcp-mushroomobserver";
+
+const server = buildServer();
+await server.connect(myTransport);
+```
+
 ## License
 
 MIT. See the root [LICENSE](https://github.com/andrewschristison/pondlog).

@@ -70,6 +70,18 @@ height (ft); `00010` = water temperature (°C). Full list:
 - *"Find USGS gauges within 25 km of Port Angeles, WA, and show today's flow."*
 - *"Pull daily mean streamflow for the Dungeness River from January 2024."*
 
+## Use as a library
+
+The package's import entry builds the server without starting a transport,
+so you can serve it over another transport (for example Streamable HTTP):
+
+```ts
+import { buildServer } from "@pondlog/mcp-usgs";
+
+const server = buildServer();
+await server.connect(myTransport);
+```
+
 ## License
 
 MIT.
