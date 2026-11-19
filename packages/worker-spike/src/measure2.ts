@@ -1,0 +1,11 @@
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { buildUpstream } from "./upstream.js";
+const s = buildUpstream();
+const [a, b] = InMemoryTransport.createLinkedPair();
+await s.connect(a);
+const c = new Client({ name: "m", version: "0" });
+await c.connect(b);
+const { tools } = await c.listTools();
+const j = JSON.stringify(tools);
+console.log("upstream tools:", tools.length, "chars:", j.length, "approx tokens:", Math.round(j.length / 3.5));

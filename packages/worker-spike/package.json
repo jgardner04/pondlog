@@ -1,0 +1,23 @@
+{
+  "name": "@pondlog/worker-spike",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "wrangler dev", "measure": "tsx src/measure.ts" },
+  "dependencies": {
+    "@cloudflare/codemode": "0.5.6",
+    "agents": "0.33.0",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@modelcontextprotocol/server": "2.4.0",
+    "@modelcontextprotocol/client": "2.4.0",
+    "@pondlog/core": "workspace:^",
+    "@pondlog/source-ebird": "workspace:^",
+    "@pondlog/source-inaturalist": "workspace:^",
+    "@pondlog/source-mushroomobserver": "workspace:^",
+    "@pondlog/source-nightsky": "workspace:^",
+    "@pondlog/source-npn": "workspace:^",
+    "@pondlog/source-usgs": "workspace:^",
+    "@cropgraph/core": "^3.0.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": { "wrangler": "4.165.0", "tsx": "^4.19.0", "@cloudflare/workers-types": "^4.20251101.0" }
+}
