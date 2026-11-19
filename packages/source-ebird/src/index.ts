@@ -1,8 +1,13 @@
 export {
   assertEbirdApiKey,
+  createEbirdFetcher,
   ebirdFetch,
+  type EbirdFetcher,
+  type EbirdFetcherOptions,
   type EbirdFetchOptions,
 } from "./client.js";
+
+export { createEbirdClient, type EbirdClient } from "./ebird-client.js";
 
 export {
   normalizeHotspot,
@@ -14,6 +19,7 @@ export {
 export * from "./schemas.js";
 
 export {
+  createObservationEndpoints,
   getHistoricOnDate,
   getNearbyNotable,
   getNearbyNotableNormalized,
@@ -32,6 +38,7 @@ export {
 } from "./observations.js";
 
 export {
+  createProductEndpoints,
   getChecklist,
   getRecentChecklists,
   getTop100,
@@ -40,6 +47,7 @@ export {
 } from "./product.js";
 
 export {
+  createHotspotEndpoints,
   getHotspotInfo,
   getHotspotInfoNormalized,
   getHotspotsInRegion,
@@ -51,6 +59,7 @@ export {
 } from "./hotspots.js";
 
 export {
+  createTaxonomyEndpoints,
   getTaxaLocales,
   getTaxonomicForms,
   getTaxonomicGroups,
@@ -63,6 +72,7 @@ export {
 } from "./taxonomy.js";
 
 export {
+  createRegionEndpoints,
   getAdjacentRegions,
   getRegionInfo,
   getSubRegions,

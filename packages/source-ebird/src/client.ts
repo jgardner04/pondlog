@@ -10,11 +10,29 @@ import type { z } from "zod";
 
 const BASE_URL = "https://api.ebird.org/v2";
 
-const limiter = new RateLimiter({
-  maxTokens: 100,
-  refillRate: 100,
-  refillIntervalMs: 60_000,
-});
+/**
+ * One limiter per API key (100 req/min each), so callers with different keys
+ * never queue behind each other. Bounded so a long-lived process serving many
+ * keys cannot grow without limit; the least recently used limiter is dropped.
+ * Limits are per process (or per isolate), not global.
+ */
+const MAX_LIMITERS = 500;
+const limiters = new Map<string, RateLimiter>();
+
+export function limiterForKey(key: string): RateLimiter {
+  let limiter = limiters.get(key);
+  if (limiter) {
+    limiters.delete(key);
+  } else {
+    limiter = new RateLimiter({ maxTokens: 100, refillRate: 100, refillIntervalMs: 60_000 });
+    if (limiters.size >= MAX_LIMITERS) {
+      const oldest = limiters.keys().next().value;
+      if (oldest !== undefined) limiters.delete(oldest);
+    }
+  }
+  limiters.set(key, limiter);
+  return limiter;
+}
 
 class RateLimitedError extends Error {
   readonly statusCode: number;
@@ -34,21 +52,30 @@ class HttpError extends Error {
   }
 }
 
+const ENV_MISSING_KEY_MESSAGE =
+  "EBIRD_API_KEY environment variable is not set. Get a free key at https://ebird.org/api/keygen and export EBIRD_API_KEY=<your-key>.";
+
 class MissingApiKeyError extends Error {
-  constructor() {
-    super(
-      "EBIRD_API_KEY environment variable is not set. Get a free key at https://ebird.org/api/keygen and export EBIRD_API_KEY=<your-key>.",
-    );
+  constructor(message: string = ENV_MISSING_KEY_MESSAGE) {
+    super(message);
     this.name = "MissingApiKeyError";
   }
 }
 
-function readApiKey(): string {
-  const key = process.env.EBIRD_API_KEY;
+function readEnvApiKey(): string | undefined {
+  return process.env.EBIRD_API_KEY;
+}
+
+function resolveKey(getApiKey: () => string | undefined, missingKeyMessage?: string): string {
+  const key = getApiKey();
   if (!key || key.trim() === "") {
-    throw new MissingApiKeyError();
+    throw new MissingApiKeyError(missingKeyMessage);
   }
   return key.trim();
+}
+
+function readApiKey(): string {
+  return resolveKey(readEnvApiKey);
 }
 
 /**
@@ -78,20 +105,55 @@ function buildUrl(path: string, opts: EbirdFetchOptions | undefined): string {
   return url.toString();
 }
 
-export async function ebirdFetch<T>(
+/** The signature every endpoint function fetches through. */
+export type EbirdFetcher = <T>(
+  path: string,
+  schema: z.ZodType<T>,
+  opts?: EbirdFetchOptions,
+) => Promise<Result<T>>;
+
+export interface EbirdFetcherOptions {
+  /**
+   * Returns the eBird API key for the current call. When provided, it is the
+   * only key source: `process.env.EBIRD_API_KEY` is not read. When omitted,
+   * the key is read from `process.env.EBIRD_API_KEY` on every call.
+   */
+  getApiKey?: () => string | undefined;
+  /** Error message used when `getApiKey` returns no key. */
+  missingKeyMessage?: string;
+}
+
+/**
+ * Creates a fetcher bound to one key source. Endpoint factories
+ * (`createHotspotEndpoints` and friends) take one, and `createEbirdClient`
+ * wires them all together.
+ */
+export function createEbirdFetcher(options: EbirdFetcherOptions = {}): EbirdFetcher {
+  const getApiKey = options.getApiKey ?? readEnvApiKey;
+  const missingKeyMessage = options.getApiKey ? options.missingKeyMessage : undefined;
+  return (path, schema, opts) => fetchWithKey(getApiKey, missingKeyMessage, path, schema, opts);
+}
+
+/** Default fetcher: reads `process.env.EBIRD_API_KEY` on every call. */
+export const ebirdFetch: EbirdFetcher = createEbirdFetcher();
+
+async function fetchWithKey<T>(
+  getApiKey: () => string | undefined,
+  missingKeyMessage: string | undefined,
   path: string,
   schema: z.ZodType<T>,
   opts?: EbirdFetchOptions,
 ): Promise<Result<T>> {
   let apiKey: string;
   try {
-    apiKey = readApiKey();
+    apiKey = resolveKey(getApiKey, missingKeyMessage);
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
     return err({ source: "ebird", message });
   }
 
   const url = buildUrl(path, opts);
+  const limiter = limiterForKey(apiKey);
 
   try {
     const json = await withRetry(

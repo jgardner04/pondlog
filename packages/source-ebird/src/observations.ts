@@ -1,5 +1,5 @@
 import { err, ok, type Observation, type Result } from "@pondlog/core";
-import { ebirdFetch } from "./client.js";
+import { ebirdFetch as defaultEbirdFetch, type EbirdFetcher } from "./client.js";
 import { normalizeObservation } from "./normalize.js";
 import { EbirdObservationListSchema, type EbirdObservation } from "./schemas.js";
 
@@ -86,179 +86,200 @@ function recentSearchParams(p: RecentObservationsParams): Record<string, string 
   };
 }
 
-// 1. GET /data/obs/{regionCode}/recent
-export async function getRecentObservations(
-  regionCode: string,
-  params: RecentObservationsParams = {},
-): Promise<Result<EbirdObservation[]>> {
-  const back = clampBack(params.back);
-  if (!back.ok) return err({ source: "ebird", message: back.error });
+/**
+ * Builds this module's endpoint functions around one fetcher. The
+ * `ebirdFetch` parameter shadows the module default, so every endpoint
+ * below sends the key that fetcher resolves.
+ */
+export function createObservationEndpoints(ebirdFetch: EbirdFetcher) {
+  // 1. GET /data/obs/{regionCode}/recent
+  async function getRecentObservations(
+    regionCode: string,
+    params: RecentObservationsParams = {},
+  ): Promise<Result<EbirdObservation[]>> {
+    const back = clampBack(params.back);
+    if (!back.ok) return err({ source: "ebird", message: back.error });
 
-  const result = await ebirdFetch(
-    `/data/obs/${encodeURIComponent(regionCode)}/recent`,
-    EbirdObservationListSchema,
-    { searchParams: { ...recentSearchParams(params), back: back.value } },
-  );
-  return result;
-}
+    const result = await ebirdFetch(
+      `/data/obs/${encodeURIComponent(regionCode)}/recent`,
+      EbirdObservationListSchema,
+      { searchParams: { ...recentSearchParams(params), back: back.value } },
+    );
+    return result;
+  }
 
-// 2. GET /data/obs/{regionCode}/recent/notable
-export async function getRecentNotable(
-  regionCode: string,
-  params: NotableObservationsParams = {},
-): Promise<Result<EbirdObservation[]>> {
-  const back = clampBack(params.back);
-  if (!back.ok) return err({ source: "ebird", message: back.error });
+  // 2. GET /data/obs/{regionCode}/recent/notable
+  async function getRecentNotable(
+    regionCode: string,
+    params: NotableObservationsParams = {},
+  ): Promise<Result<EbirdObservation[]>> {
+    const back = clampBack(params.back);
+    if (!back.ok) return err({ source: "ebird", message: back.error });
 
-  return ebirdFetch(
-    `/data/obs/${encodeURIComponent(regionCode)}/recent/notable`,
-    EbirdObservationListSchema,
-    { searchParams: { ...recentSearchParams(params), back: back.value, detail: params.detail } },
-  );
-}
+    return ebirdFetch(
+      `/data/obs/${encodeURIComponent(regionCode)}/recent/notable`,
+      EbirdObservationListSchema,
+      { searchParams: { ...recentSearchParams(params), back: back.value, detail: params.detail } },
+    );
+  }
 
-// 3. GET /data/obs/{regionCode}/recent/{speciesCode}
-export async function getRecentOfSpecies(
-  regionCode: string,
-  speciesCode: string,
-  params: RecentObservationsParams = {},
-): Promise<Result<EbirdObservation[]>> {
-  const back = clampBack(params.back);
-  if (!back.ok) return err({ source: "ebird", message: back.error });
+  // 3. GET /data/obs/{regionCode}/recent/{speciesCode}
+  async function getRecentOfSpecies(
+    regionCode: string,
+    speciesCode: string,
+    params: RecentObservationsParams = {},
+  ): Promise<Result<EbirdObservation[]>> {
+    const back = clampBack(params.back);
+    if (!back.ok) return err({ source: "ebird", message: back.error });
 
-  return ebirdFetch(
-    `/data/obs/${encodeURIComponent(regionCode)}/recent/${encodeURIComponent(speciesCode)}`,
-    EbirdObservationListSchema,
-    { searchParams: { ...recentSearchParams(params), back: back.value } },
-  );
-}
+    return ebirdFetch(
+      `/data/obs/${encodeURIComponent(regionCode)}/recent/${encodeURIComponent(speciesCode)}`,
+      EbirdObservationListSchema,
+      { searchParams: { ...recentSearchParams(params), back: back.value } },
+    );
+  }
 
-// 4. GET /data/obs/geo/recent
-export async function getNearbyRecent(
-  lat: number,
-  lng: number,
-  params: NearbyObservationsParams = {},
-): Promise<Result<EbirdObservation[]>> {
-  const back = clampBack(params.back);
-  if (!back.ok) return err({ source: "ebird", message: back.error });
-  const dist = clampDist(params.dist);
-  if (!dist.ok) return err({ source: "ebird", message: dist.error });
+  // 4. GET /data/obs/geo/recent
+  async function getNearbyRecent(
+    lat: number,
+    lng: number,
+    params: NearbyObservationsParams = {},
+  ): Promise<Result<EbirdObservation[]>> {
+    const back = clampBack(params.back);
+    if (!back.ok) return err({ source: "ebird", message: back.error });
+    const dist = clampDist(params.dist);
+    if (!dist.ok) return err({ source: "ebird", message: dist.error });
 
-  return ebirdFetch("/data/obs/geo/recent", EbirdObservationListSchema, {
-    searchParams: {
-      lat,
-      lng,
-      ...recentSearchParams(params),
-      back: back.value,
-      dist: dist.value,
-      sort: params.sort,
-    },
-  });
-}
-
-// 5. GET /data/obs/geo/recent/notable
-export async function getNearbyNotable(
-  lat: number,
-  lng: number,
-  params: NearbyNotableParams = {},
-): Promise<Result<EbirdObservation[]>> {
-  const back = clampBack(params.back);
-  if (!back.ok) return err({ source: "ebird", message: back.error });
-  const dist = clampDist(params.dist);
-  if (!dist.ok) return err({ source: "ebird", message: dist.error });
-
-  return ebirdFetch("/data/obs/geo/recent/notable", EbirdObservationListSchema, {
-    searchParams: {
-      lat,
-      lng,
-      ...recentSearchParams(params),
-      back: back.value,
-      dist: dist.value,
-      detail: params.detail,
-    },
-  });
-}
-
-// 6. GET /data/obs/geo/recent/{speciesCode}
-export async function getNearbyOfSpecies(
-  lat: number,
-  lng: number,
-  speciesCode: string,
-  params: NearbyOfSpeciesParams = {},
-): Promise<Result<EbirdObservation[]>> {
-  const back = clampBack(params.back);
-  if (!back.ok) return err({ source: "ebird", message: back.error });
-  const dist = clampDist(params.dist);
-  if (!dist.ok) return err({ source: "ebird", message: dist.error });
-
-  return ebirdFetch(
-    `/data/obs/geo/recent/${encodeURIComponent(speciesCode)}`,
-    EbirdObservationListSchema,
-    {
+    return ebirdFetch("/data/obs/geo/recent", EbirdObservationListSchema, {
       searchParams: {
         lat,
         lng,
         ...recentSearchParams(params),
         back: back.value,
         dist: dist.value,
+        sort: params.sort,
       },
-    },
-  );
-}
-
-// 7. GET /data/obs/{regionCode}/historic/{y}/{m}/{d}
-export async function getHistoricOnDate(
-  regionCode: string,
-  year: number,
-  month: number,
-  day: number,
-  params: HistoricObservationsParams = {},
-): Promise<Result<EbirdObservation[]>> {
-  if (!Number.isInteger(year) || year < 1800) {
-    return err({ source: "ebird", message: `year must be an integer >= 1800, got ${year}` });
-  }
-  if (!Number.isInteger(month) || month < 1 || month > 12) {
-    return err({ source: "ebird", message: `month must be 1–12, got ${month}` });
-  }
-  if (!Number.isInteger(day) || day < 1 || day > 31) {
-    return err({ source: "ebird", message: `day must be 1–31, got ${day}` });
+    });
   }
 
-  return ebirdFetch(
-    `/data/obs/${encodeURIComponent(regionCode)}/historic/${year}/${month}/${day}`,
-    EbirdObservationListSchema,
-    {
+  // 5. GET /data/obs/geo/recent/notable
+  async function getNearbyNotable(
+    lat: number,
+    lng: number,
+    params: NearbyNotableParams = {},
+  ): Promise<Result<EbirdObservation[]>> {
+    const back = clampBack(params.back);
+    if (!back.ok) return err({ source: "ebird", message: back.error });
+    const dist = clampDist(params.dist);
+    if (!dist.ok) return err({ source: "ebird", message: dist.error });
+
+    return ebirdFetch("/data/obs/geo/recent/notable", EbirdObservationListSchema, {
       searchParams: {
-        cat: params.cat,
+        lat,
+        lng,
+        ...recentSearchParams(params),
+        back: back.value,
+        dist: dist.value,
         detail: params.detail,
-        hotspot: params.hotspot,
-        includeProvisional: params.includeProvisional,
-        maxResults: params.maxResults,
-        r: joinR(params.r),
-        rank: params.rank,
-        sppLocale: params.sppLocale,
       },
-    },
-  );
+    });
+  }
+
+  // 6. GET /data/obs/geo/recent/{speciesCode}
+  async function getNearbyOfSpecies(
+    lat: number,
+    lng: number,
+    speciesCode: string,
+    params: NearbyOfSpeciesParams = {},
+  ): Promise<Result<EbirdObservation[]>> {
+    const back = clampBack(params.back);
+    if (!back.ok) return err({ source: "ebird", message: back.error });
+    const dist = clampDist(params.dist);
+    if (!dist.ok) return err({ source: "ebird", message: dist.error });
+
+    return ebirdFetch(
+      `/data/obs/geo/recent/${encodeURIComponent(speciesCode)}`,
+      EbirdObservationListSchema,
+      {
+        searchParams: {
+          lat,
+          lng,
+          ...recentSearchParams(params),
+          back: back.value,
+          dist: dist.value,
+        },
+      },
+    );
+  }
+
+  // 7. GET /data/obs/{regionCode}/historic/{y}/{m}/{d}
+  async function getHistoricOnDate(
+    regionCode: string,
+    year: number,
+    month: number,
+    day: number,
+    params: HistoricObservationsParams = {},
+  ): Promise<Result<EbirdObservation[]>> {
+    if (!Number.isInteger(year) || year < 1800) {
+      return err({ source: "ebird", message: `year must be an integer >= 1800, got ${year}` });
+    }
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
+      return err({ source: "ebird", message: `month must be 1–12, got ${month}` });
+    }
+    if (!Number.isInteger(day) || day < 1 || day > 31) {
+      return err({ source: "ebird", message: `day must be 1–31, got ${day}` });
+    }
+
+    return ebirdFetch(
+      `/data/obs/${encodeURIComponent(regionCode)}/historic/${year}/${month}/${day}`,
+      EbirdObservationListSchema,
+      {
+        searchParams: {
+          cat: params.cat,
+          detail: params.detail,
+          hotspot: params.hotspot,
+          includeProvisional: params.includeProvisional,
+          maxResults: params.maxResults,
+          r: joinR(params.r),
+          rank: params.rank,
+          sppLocale: params.sppLocale,
+        },
+      },
+    );
+  }
+
+  // Convenience: normalized variants (return shared @pondlog/core Observation)
+  async function getNearbyRecentNormalized(
+    lat: number,
+    lng: number,
+    params: NearbyObservationsParams = {},
+  ): Promise<Result<Observation[]>> {
+    const result = await getNearbyRecent(lat, lng, params);
+    if (!result.ok) return result;
+    return ok(result.data.map(normalizeObservation));
+  }
+
+  async function getNearbyNotableNormalized(
+    lat: number,
+    lng: number,
+    params: NearbyNotableParams = {},
+  ): Promise<Result<Observation[]>> {
+    const result = await getNearbyNotable(lat, lng, params);
+    if (!result.ok) return result;
+    return ok(result.data.map(normalizeObservation));
+  }
+
+  return { getRecentObservations, getRecentNotable, getRecentOfSpecies, getNearbyRecent, getNearbyNotable, getNearbyOfSpecies, getHistoricOnDate, getNearbyRecentNormalized, getNearbyNotableNormalized };
 }
 
-// Convenience: normalized variants (return shared @pondlog/core Observation)
-export async function getNearbyRecentNormalized(
-  lat: number,
-  lng: number,
-  params: NearbyObservationsParams = {},
-): Promise<Result<Observation[]>> {
-  const result = await getNearbyRecent(lat, lng, params);
-  if (!result.ok) return result;
-  return ok(result.data.map(normalizeObservation));
-}
-
-export async function getNearbyNotableNormalized(
-  lat: number,
-  lng: number,
-  params: NearbyNotableParams = {},
-): Promise<Result<Observation[]>> {
-  const result = await getNearbyNotable(lat, lng, params);
-  if (!result.ok) return result;
-  return ok(result.data.map(normalizeObservation));
-}
+export const {
+  getRecentObservations,
+  getRecentNotable,
+  getRecentOfSpecies,
+  getNearbyRecent,
+  getNearbyNotable,
+  getNearbyOfSpecies,
+  getHistoricOnDate,
+  getNearbyRecentNormalized,
+  getNearbyNotableNormalized,
+} = createObservationEndpoints(defaultEbirdFetch);
