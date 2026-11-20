@@ -1,0 +1,31 @@
+// See README.md for the one-time setup (KV namespace, GitHub
+// OAuth app, secrets). There is deliberately no EBIRD_API_KEY here: every
+// user brings their own key through the sign-in flow, and the Worker
+// refuses to serve if such a binding ever appears.
+{
+  "name": "pondlog-remote",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": [
+    "nodejs_compat",
+    // Keep vars and secrets out of process.env, so library code that reads
+    // process.env (for example the stdio EBIRD_API_KEY fallback) sees nothing.
+    "nodejs_compat_do_not_populate_process_env",
+    // Required by the OAuth library for Client ID Metadata Documents.
+    "global_fetch_strictly_public"
+  ],
+  "worker_loaders": [{ "binding": "LOADER" }],
+  "kv_namespaces": [
+    // Replace the id with the one `wrangler kv namespace create OAUTH_KV` prints.
+    { "binding": "OAUTH_KV", "id": "REPLACE_WITH_YOUR_KV_NAMESPACE_ID" }
+  ],
+  "vars": {
+    // Comma-separated numeric GitHub user IDs allowed to sign in. Empty
+    // means nobody can sign in. Find yours at https://api.github.com/users/<login> ("id").
+    "ALLOWED_GITHUB_IDS": "",
+    // Code Mode runs per user per UTC day.
+    "DAILY_CODE_LIMIT": "200"
+  },
+  // Secrets, set with `wrangler secret put`: GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET.
+  "observability": { "enabled": true }
+}
