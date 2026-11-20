@@ -14,7 +14,6 @@ export interface RecentChecklistsParams {
   maxResults?: number;
 }
 
-
 export interface Top100Params {
   /** "spp" (most species) or "cl" (most checklists). Default spp. */
   rankedBy?: "spp" | "cl";

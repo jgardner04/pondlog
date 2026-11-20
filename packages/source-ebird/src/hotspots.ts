@@ -13,7 +13,6 @@ export interface HotspotsInRegionParams {
   back?: number;
 }
 
-
 export interface NearbyHotspotsParams {
   /** Search radius in km (0–50). Default 25. */
   dist?: number;
