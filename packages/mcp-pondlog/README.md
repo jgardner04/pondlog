@@ -96,7 +96,7 @@ All tools are read-only. Coordinates use WGS84 decimal degrees.
 |------|-------------|---------|
 | `get_nature_briefing` | Full unified briefing (the headline tool). | iNaturalist + eBird + NOAA + USGS + NPN + astronomy-engine |
 | `get_nearby_wildlife` | Recent wildlife sightings, merged + chronologically sorted. | iNaturalist + eBird |
-| `get_water_conditions` | Streamflow + tide predictions, both keys always present. | USGS + NOAA |
+| `get_water_conditions` | Streamflow + tide predictions, both keys always present. Tide times are station-local. | USGS + NOAA |
 | `get_tonight_sky` | Sun, moon, planets, meteor showers, dark-sky window, constellations. | astronomy-engine (pure local computation) |
 | `get_phenology` | What's blooming / leafing out near you. | USA-NPN |
 
