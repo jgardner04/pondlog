@@ -1,0 +1,58 @@
+# Fork-only. Runs on every pull request into deploy/cloudflare, which
+# Cloudflare Workers Builds deploys to production on push. Mark the
+# "deploy-checks" job as a required status check in the branch ruleset so
+# a PR that fails to build or test can't merge (and so can't deploy).
+name: Deploy checks
+
+on:
+  pull_request:
+    branches: [deploy/cloudflare]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-checks:
+    name: deploy-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Workspace guard
+        run: |
+          node scripts/workspace-guard.mjs
+          node scripts/workspace-guard.mjs --self-test
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      # Same major as the Workers Builds image (Node 24).
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The same command Workers Builds runs before deploying.
+      - name: Build (as Workers Builds does)
+        run: pnpm build:worker
+
+      - name: Build everything else
+        run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      # Bundles the Worker and walks the whole connector flow in local
+      # workerd, with GitHub and eBird mocked. No network or secrets needed.
+      - name: Worker end-to-end
+        run: pnpm --filter @pondlog/worker-remote e2e
