@@ -62,7 +62,8 @@ Published as: `@pondlog/source-inaturalist`
 ### `packages/source-ebird`
 eBird API client. Same pattern as iNaturalist.
 
-- Requires `EBIRD_API_KEY` env var
+- Reads its key from the `EBIRD_API_KEY` env var by default. `createEbirdClient({ getApiKey })` returns a client bound to one caller's key instead, for processes that serve several users
+- Rate-limits per key (100 req/min each)
 - Full 21-endpoint coverage
 - Published as: `@pondlog/source-ebird`
 
