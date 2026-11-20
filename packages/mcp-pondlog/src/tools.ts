@@ -151,7 +151,8 @@ function registerGetWaterConditions(server: McpServer): void {
       title: "Water Conditions (USGS Streamflow + NOAA Tides)",
       description:
         "Returns current streamflow (USGS instantaneous values: discharge cfs and gage height ft) plus tide predictions (NOAA CO-OPS, high/low for the date). " +
-        "Both keys are always present in the response, `streamflow: null` when no USGS site is configured, `tides: null` when no NOAA station is configured. Failures populate `errors[]`. " +
+        "Both keys are always present in the response, `streamflow: null` when no USGS site is configured, `tides: null` when no NOAA station is configured. Failures populate `errors[]`; leaving one source out is not a failure. " +
+        "Tide times are the station's local time (standard or daylight, as NOAA's lst_ldt), with no zone suffix. " +
         "Pass `noaa_station` and `usgs_site` per call, or set NOAA_STATION and USGS_SITE env vars at server startup. Neither requires an API key.",
       inputSchema: {
         date: dateField
@@ -186,14 +187,14 @@ function registerGetWaterConditions(server: McpServer): void {
         noaaPromise.catch(captureSettled<TideEvent[]>("noaa")),
       ]);
 
-      if (!usgsSite) {
+      // Asking for only one source is normal; report a missing source only
+      // when neither was given, since then the call can return nothing.
+      if (!usgsSite && !noaaStation) {
         errors.push({
           source: "usgs",
           message:
             "no USGS site configured, pass `usgs_site` or set USGS_SITE env var",
         });
-      }
-      if (!noaaStation) {
         errors.push({
           source: "noaa",
           message:
