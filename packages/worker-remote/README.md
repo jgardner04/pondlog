@@ -65,6 +65,18 @@ You need:
 
    Connectors are tied to your Claude account, not to one app. See [Get started with custom connectors](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
 
+### Deploy on every push (Cloudflare Workers Builds)
+
+Workers Builds deploys from a clean checkout on every push, so stale `dist/` folders can't ship. Set it up once in the Cloudflare dashboard:
+
+1. Open the `pondlog-remote` Worker, then go to **Settings > Build** and connect your fork.
+2. Set **Git branch** to `deploy/cloudflare`.
+3. Leave **Root directory** empty, which means the repo root. The pnpm lockfile and the `packageManager` field live at the root.
+4. Set **Build command** to `pnpm install --frozen-lockfile && pnpm build:worker`.
+5. Set **Deploy command** to `pnpm deploy:worker`.
+
+Keep GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET as Worker secrets under **Settings > Variables & Secrets**. Builds never see them.
+
 To change your eBird key, disconnect the connector and connect it again. A grant lasts at most 90 days, and it ends sooner if it goes unused for 30 days.
 
 ## Develop and test

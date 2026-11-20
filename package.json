@@ -15,7 +15,9 @@
     "typecheck": "pnpm -r --filter \"./packages/**\" run typecheck",
     "test": "pnpm -r --filter \"./packages/**\" run test",
     "smoke": "pnpm --filter @pondlog/source-inaturalist run smoke",
-    "clean": "pnpm -r exec rm -rf dist node_modules .turbo"
+    "clean": "pnpm -r exec rm -rf dist node_modules .turbo",
+    "build:worker": "pnpm -r --filter \"@pondlog/worker-remote...\" run build",
+    "deploy:worker": "pnpm --filter @pondlog/worker-remote exec wrangler deploy"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
