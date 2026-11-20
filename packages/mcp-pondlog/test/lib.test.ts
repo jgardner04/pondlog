@@ -24,7 +24,7 @@ describe("library entry", () => {
     const client = new Client({ name: "test", version: "0" });
     await client.connect(b);
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name).sort()).toEqual(["get_nature_briefing", "get_nearby_wildlife", "get_phenology", "get_tonight_sky", "get_water_conditions"]);
+    expect(tools.map((t) => t.name).sort()).toEqual(["find_tide_stations", "get_nature_briefing", "get_nearby_wildlife", "get_phenology", "get_tonight_sky", "get_water_conditions"]);
   });
 });
 
