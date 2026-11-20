@@ -21,6 +21,23 @@ issuing any requests.
 The library handles the ~100 req/min rate limit internally and backs off
 on 429 with exponential retry.
 
+### One key per caller
+
+A process that serves several people (an HTTP MCP server, a web app) should
+not share one environment variable. Create a client per caller instead:
+
+```ts
+import { createEbirdClient } from "@pondlog/source-ebird";
+
+const ebird = createEbirdClient({ getApiKey: () => user.ebirdKey });
+const result = await ebird.getNearbyRecent(48.118, -123.4307);
+```
+
+The client has every endpoint function below. When `getApiKey` is given it is
+the only key source, and `process.env.EBIRD_API_KEY` is not read; pass
+`missingKeyMessage` to word the error when it returns nothing. The top-level
+functions are a default client that reads the environment on every call.
+
 ## Install
 
 ```sh
@@ -114,7 +131,8 @@ eBird uses hierarchical region codes:
 ## Rate limits
 
 The eBird API rate limit is undocumented. This client throttles at 100
-req/min and retries on 429 with exponential backoff (1s, 2s, 4s, max 3
+req/min per API key (each key gets its own budget, tracked per process) and
+retries on 429 with exponential backoff (1s, 2s, 4s, max 3
 attempts).
 
 ## License

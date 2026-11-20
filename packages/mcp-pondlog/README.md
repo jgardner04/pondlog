@@ -153,6 +153,29 @@ After configuring, try:
   Desktop, Cursor, an agent) is the right place to add it. Cold call at
   Port Angeles takes ~2.5 s.
 
+## Use as a library
+
+The package's import entry builds the server without starting a transport,
+so you can serve it over another transport (for example Streamable HTTP):
+
+```ts
+import { buildServer } from "@pondlog/mcp-pondlog";
+
+const server = buildServer();
+await server.connect(myTransport);
+```
+
+To serve several people from one process, give each caller their own eBird
+key instead of `EBIRD_API_KEY`:
+
+```ts
+import { createEbirdClient } from "@pondlog/source-ebird";
+
+const server = buildServer({ ebird: createEbirdClient({ getApiKey: () => user.ebirdKey }) });
+```
+
+With an injected client, the `ebird_api_key` tool input is not offered.
+
 ## License
 
 MIT. See the root [LICENSE](https://github.com/andrewschristison/pondlog).

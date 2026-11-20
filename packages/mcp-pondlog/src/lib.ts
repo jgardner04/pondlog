@@ -1,0 +1,9 @@
+// Library entry: builds the server without starting a transport. Importing
+// this module has no side effects; the stdio binary lives in index.ts.
+export {
+  buildServer,
+  SERVER_NAME,
+  SERVER_VERSION,
+  type BuildServerOptions,
+} from "./server.js";
+export { registerAllTools, type RegisterToolsOptions } from "./tools.js";

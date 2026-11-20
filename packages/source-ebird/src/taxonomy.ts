@@ -1,6 +1,6 @@
 import { err, ok, type Result, type Taxon } from "@pondlog/core";
 import { z } from "zod";
-import { ebirdFetch } from "./client.js";
+import { ebirdFetch as defaultEbirdFetch, type EbirdFetcher } from "./client.js";
 import { normalizeTaxonomyEntry } from "./normalize.js";
 import {
   EbirdTaxaLocaleListSchema,
@@ -32,46 +32,9 @@ function joinList(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v.join(",") : v;
 }
 
-// 1. GET /ref/taxonomy/ebird
-export async function getTaxonomy(
-  params: TaxonomyParams = {},
-): Promise<Result<EbirdTaxonomyEntry[]>> {
-  return ebirdFetch("/ref/taxonomy/ebird", EbirdTaxonomyListSchema, {
-    searchParams: {
-      fmt: "json",
-      cat: joinList(params.cat),
-      species: joinList(params.species),
-      locale: params.locale,
-      version: params.version,
-    },
-  });
-}
 
-// 2. GET /ref/taxonomy/forms/{speciesCode}
-// API returns a bare string[]; we wrap it in {speciesCode, forms} for callers.
-export async function getTaxonomicForms(
-  speciesCode: string,
-): Promise<Result<EbirdTaxonomicForm>> {
-  if (!speciesCode.trim()) {
-    return err({ source: "ebird", message: "getTaxonomicForms: speciesCode is empty" });
-  }
-  const result = await ebirdFetch(
-    `/ref/taxonomy/forms/${encodeURIComponent(speciesCode)}`,
-    TaxonomicFormsResponseSchema,
-  );
-  if (!result.ok) return result;
-  return ok({ speciesCode, forms: result.data });
-}
 
-// 3. GET /ref/taxonomy/locales
-export async function getTaxaLocales(): Promise<Result<EbirdTaxaLocale[]>> {
-  return ebirdFetch("/ref/taxonomy/locales", EbirdTaxaLocaleListSchema);
-}
 
-// 4. GET /ref/taxonomy/versions
-export async function getTaxonomyVersions(): Promise<Result<EbirdTaxonomyVersion[]>> {
-  return ebirdFetch("/ref/taxonomy/versions", EbirdTaxonomyVersionListSchema);
-}
 
 // 5. GET /ref/taxonomy/groups/{speciesGrouping}
 export type SpeciesGrouping = "merlin" | "ebird";
@@ -81,22 +44,81 @@ export interface TaxonomicGroupsParams {
   groupNameLocale?: string;
 }
 
-export async function getTaxonomicGroups(
-  grouping: SpeciesGrouping,
-  params: TaxonomicGroupsParams = {},
-): Promise<Result<EbirdTaxonomicGroup[]>> {
-  return ebirdFetch(
-    `/ref/sppgroup/${encodeURIComponent(grouping)}`,
-    EbirdTaxonomicGroupListSchema,
-    { searchParams: { groupNameLocale: params.groupNameLocale } },
-  );
+/**
+ * Builds this module's endpoint functions around one fetcher. The
+ * `ebirdFetch` parameter shadows the module default, so every endpoint
+ * below sends the key that fetcher resolves.
+ */
+export function createTaxonomyEndpoints(ebirdFetch: EbirdFetcher) {
+  // 1. GET /ref/taxonomy/ebird
+  async function getTaxonomy(
+    params: TaxonomyParams = {},
+  ): Promise<Result<EbirdTaxonomyEntry[]>> {
+    return ebirdFetch("/ref/taxonomy/ebird", EbirdTaxonomyListSchema, {
+      searchParams: {
+        fmt: "json",
+        cat: joinList(params.cat),
+        species: joinList(params.species),
+        locale: params.locale,
+        version: params.version,
+      },
+    });
+  }
+
+  // 2. GET /ref/taxonomy/forms/{speciesCode}
+  // API returns a bare string[]; we wrap it in {speciesCode, forms} for callers.
+  async function getTaxonomicForms(
+    speciesCode: string,
+  ): Promise<Result<EbirdTaxonomicForm>> {
+    if (!speciesCode.trim()) {
+      return err({ source: "ebird", message: "getTaxonomicForms: speciesCode is empty" });
+    }
+    const result = await ebirdFetch(
+      `/ref/taxonomy/forms/${encodeURIComponent(speciesCode)}`,
+      TaxonomicFormsResponseSchema,
+    );
+    if (!result.ok) return result;
+    return ok({ speciesCode, forms: result.data });
+  }
+
+  // 3. GET /ref/taxonomy/locales
+  async function getTaxaLocales(): Promise<Result<EbirdTaxaLocale[]>> {
+    return ebirdFetch("/ref/taxonomy/locales", EbirdTaxaLocaleListSchema);
+  }
+
+  // 4. GET /ref/taxonomy/versions
+  async function getTaxonomyVersions(): Promise<Result<EbirdTaxonomyVersion[]>> {
+    return ebirdFetch("/ref/taxonomy/versions", EbirdTaxonomyVersionListSchema);
+  }
+
+  async function getTaxonomicGroups(
+    grouping: SpeciesGrouping,
+    params: TaxonomicGroupsParams = {},
+  ): Promise<Result<EbirdTaxonomicGroup[]>> {
+    return ebirdFetch(
+      `/ref/sppgroup/${encodeURIComponent(grouping)}`,
+      EbirdTaxonomicGroupListSchema,
+      { searchParams: { groupNameLocale: params.groupNameLocale } },
+    );
+  }
+
+  // Convenience: normalized variant
+  async function getTaxonomyNormalized(
+    params: TaxonomyParams = {},
+  ): Promise<Result<Taxon[]>> {
+    const result = await getTaxonomy(params);
+    if (!result.ok) return result;
+    return ok(result.data.map(normalizeTaxonomyEntry));
+  }
+
+  return { getTaxonomy, getTaxonomicForms, getTaxaLocales, getTaxonomyVersions, getTaxonomicGroups, getTaxonomyNormalized };
 }
 
-// Convenience: normalized variant
-export async function getTaxonomyNormalized(
-  params: TaxonomyParams = {},
-): Promise<Result<Taxon[]>> {
-  const result = await getTaxonomy(params);
-  if (!result.ok) return result;
-  return ok(result.data.map(normalizeTaxonomyEntry));
-}
+export const {
+  getTaxonomy,
+  getTaxonomicForms,
+  getTaxaLocales,
+  getTaxonomyVersions,
+  getTaxonomicGroups,
+  getTaxonomyNormalized,
+} = createTaxonomyEndpoints(defaultEbirdFetch);

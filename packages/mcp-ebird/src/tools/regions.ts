@@ -1,9 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  getAdjacentRegions,
-  getRegionInfo,
-  getSubRegions,
-} from "@pondlog/source-ebird";
+import type { EbirdClient } from "@pondlog/source-ebird";
 import { z } from "zod";
 import { failure, success } from "../respond.js";
 import {
@@ -14,7 +10,7 @@ import {
 
 const READ_ONLY = { readOnlyHint: true, openWorldHint: true } as const;
 
-export function registerRegionTools(server: McpServer): void {
+export function registerRegionTools(server: McpServer, ebird: EbirdClient): void {
   server.registerTool(
     "get_region_info",
     {
@@ -41,7 +37,7 @@ export function registerRegionTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getRegionInfo(args.region_code, {
+      const result = await ebird.getRegionInfo(args.region_code, {
         ...(args.region_name_format ? { regionNameFormat: args.region_name_format } : {}),
       });
       return result.ok ? success(result.data) : failure(result.error);
@@ -69,7 +65,7 @@ export function registerRegionTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async (args) => {
-      const result = await getSubRegions(args.region_type, args.parent_region_code);
+      const result = await ebird.getSubRegions(args.region_type, args.parent_region_code);
       return result.ok ? success(result.data) : failure(result.error);
     },
   );
@@ -88,7 +84,7 @@ export function registerRegionTools(server: McpServer): void {
       annotations: READ_ONLY,
     },
     async ({ region_code }) => {
-      const result = await getAdjacentRegions(region_code);
+      const result = await ebird.getAdjacentRegions(region_code);
       return result.ok ? success(result.data) : failure(result.error);
     },
   );

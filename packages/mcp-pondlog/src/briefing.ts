@@ -19,7 +19,7 @@ import {
   type StreamflowReading,
   type TideEvent,
 } from "@pondlog/core";
-import { getNearbyRecentNormalized } from "@pondlog/source-ebird";
+import { createEbirdClient, type EbirdClient } from "@pondlog/source-ebird";
 import { getNearbyObservations } from "@pondlog/source-inaturalist";
 import {
   getRecentNearLocation as getRecentMo,
@@ -61,6 +61,8 @@ export interface BuildBriefingParams {
   /** Optional Mushroom Observer region suffix string. When provided, MO
    *  uses region-based filtering instead of bbox. */
   mushroomObserverRegion?: string;
+  /** eBird client to use. Defaults to one reading `process.env.EBIRD_API_KEY`. */
+  ebird?: EbirdSource;
 }
 
 /**
@@ -107,7 +109,8 @@ export async function buildBriefing(
     DEFAULT_INAT_DAYS,
   );
 
-  const ebirdPromise = getNearbyRecentNormalized(
+  const ebird = params.ebird ?? envEbird;
+  const ebirdPromise = ebird.getNearbyRecentNormalized(
     params.coords.lat,
     params.coords.lng,
     { dist: DEFAULT_EBIRD_DIST_KM, back: DEFAULT_EBIRD_BACK },
@@ -430,30 +433,20 @@ function isoDate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+/** The eBird calls this package makes. Any `EbirdClient` satisfies it. */
+export type EbirdSource = Pick<EbirdClient, "getNearbyRecentNormalized">;
+
+/** Default eBird client: reads `process.env.EBIRD_API_KEY` on each call. */
+const envEbird: EbirdSource = createEbirdClient();
+
 /**
- * Run `fn` with `process.env.EBIRD_API_KEY` set to `key` (when provided),
- * restoring the original value afterwards. Used so the `ebird_api_key` tool
- * input can override what the source-ebird client reads at fetch time.
- *
- * Caveat: stdio MCP servers handle JSON-RPC requests sequentially in
- * practice, but two overlapping handler invocations in the same process
- * could see interleaved env state. For shared deployments, prefer the
- * EBIRD_API_KEY env var path over the per-call input.
+ * The eBird client for one tool call. A non-empty `key` (the `ebird_api_key`
+ * tool input) gets a client bound to that key alone, so overlapping calls
+ * with different keys never share state. Otherwise the environment key is
+ * used.
  */
-export async function withEbirdApiKey<T>(
-  key: string | undefined,
-  fn: () => Promise<T>,
-): Promise<T> {
-  if (key === undefined || key.trim() === "") return fn();
-  const previous = process.env.EBIRD_API_KEY;
-  process.env.EBIRD_API_KEY = key.trim();
-  try {
-    return await fn();
-  } finally {
-    if (previous === undefined) {
-      delete process.env.EBIRD_API_KEY;
-    } else {
-      process.env.EBIRD_API_KEY = previous;
-    }
-  }
+export function ebirdFor(key: string | undefined): EbirdSource {
+  if (key === undefined || key.trim() === "") return envEbird;
+  const bound = key.trim();
+  return createEbirdClient({ getApiKey: () => bound });
 }
