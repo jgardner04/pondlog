@@ -1,4 +1,4 @@
-# Fork-only. Runs on every pull request into deploy/cloudflare, which
+# Fork-only. Runs on every pull request into main, which
 # Cloudflare Workers Builds deploys to production on push. Mark the
 # "deploy-checks" job as a required status check in the branch ruleset so
 # a PR that fails to build or test can't merge (and so can't deploy).
@@ -6,7 +6,8 @@ name: Deploy checks
 
 on:
   pull_request:
-    branches: [deploy/cloudflare]
+    # deploy/cloudflare stays listed until the branch rename is done.
+    branches: [main, deploy/cloudflare]
   workflow_dispatch:
 
 permissions:

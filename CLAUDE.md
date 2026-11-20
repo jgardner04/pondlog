@@ -10,7 +10,7 @@ Every change is either **upstream** or **fork-only**. Decide which before writin
 
 Generic improvements any pondlog user would want, for example per-request eBird key injection, exporting `buildServer()`, the `@modelcontextprotocol/sdk` bump, per-key rate limiting.
 
-- One `feat/*` branch per change, cut from `upstream/main` (never from `deploy/cloudflare`, which carries this file and the Worker).
+- One `feat/*` branch per change, cut from `upstream/main` (never from the fork's `main`, which carries this file and the Worker).
 - Touch only the packages the change needs.
 - Existing stdio behaviour keeps working, and so does the `process.env.EBIRD_API_KEY` fallback.
 - Ships with tests.
@@ -21,23 +21,24 @@ Generic improvements any pondlog user would want, for example per-request eBird 
 
 ### The upstream Worker branch
 
-`feat/worker-remote` offers `packages/worker-remote` upstream, for the maintainer to take or decline. It is stacked on `feat/export-build-server` and carries the same package as `deploy/cloudflare` with nothing specific to this deployment: `wrangler.jsonc` has a placeholder KV id and an empty `ALLOWED_GITHUB_IDS`, and the tests use made-up GitHub IDs. Port Worker changes to it after they land on `deploy/cloudflare`.
+`feat/worker-remote` offers `packages/worker-remote` upstream, for the maintainer to take or decline. It is stacked on `feat/export-build-server` and carries the same package as the fork's `main` with nothing specific to this deployment: `wrangler.jsonc` has a placeholder KV id and an empty `ALLOWED_GITHUB_IDS`, and the tests use made-up GitHub IDs. Port Worker changes to it after they land on `main`.
 
 ### Fork-only changes
 
-Everything Cloudflare (the Worker, Wrangler config, OAuth, Code Mode) lives in `packages/worker-remote` on the `deploy/cloudflare` branch. `deploy/cloudflare` merges in the `feat/*` and `fix/*` branches it depends on. Its `wrangler.jsonc` keeps this deployment's real KV id and allowlist; never bring the placeholders from `feat/worker-remote` into it.
+Everything Cloudflare (the Worker, Wrangler config, OAuth, Code Mode) lives in `packages/worker-remote` on the fork's `main` branch. `main` merges in the `feat/*` and `fix/*` branches it depends on. Its `wrangler.jsonc` keeps this deployment's real KV id and allowlist; never bring the placeholders from `feat/worker-remote` into it.
 
 ### Deploying
 
-- Cloudflare Workers Builds deploys every push to `deploy/cloudflare`. A merge is a deploy, so the owner's merge is the deploy approval.
-- A GitHub ruleset on `deploy/cloudflare` requires a pull request and the `deploy-checks` job (`.github/workflows/deploy-checks.yml`, fork-only), and blocks force pushes. Never push to it directly. Put each change on a short-lived branch (`chore/*`, `docs/*`, or a `fix/*` that also goes upstream) and open a PR into `deploy/cloudflare`.
+- Cloudflare Workers Builds deploys every push to `main`. A merge is a deploy, so the owner's merge is the deploy approval.
+- A GitHub ruleset on `main` requires a pull request and the `deploy-checks` job (`.github/workflows/deploy-checks.yml`, fork-only), and blocks force pushes. Never push to it directly. Put each change on a short-lived branch (`chore/*`, `docs/*`, or a `fix/*` that also goes upstream) and open a PR into `main`.
 - Don't deploy with a local `wrangler deploy` unless the owner asks. It bundles whatever `dist/` folders are on disk, which once shipped stale code.
 
 ## Syncing upstream
 
 - Remote `upstream` is `https://github.com/andrewschristison/pondlog`.
 - Rebase `feat/*` branches onto `upstream/main`.
-- Merge `upstream/main` into `deploy/cloudflare` (merge, so the deploy history stays intact).
+- Bring upstream in through a PR: branch `chore/sync-upstream` from `main`, merge `upstream/main` into it (merge, not rebase, so the deploy history stays intact), and open a PR into `main`. Merging it deploys.
+- Don't use GitHub's Sync fork button on `main`. It would merge upstream straight into the deploy branch.
 - When upstream merges a `feat/*` PR, delete that branch and depend on the released package version instead.
 
 ## Scope
@@ -56,9 +57,10 @@ An eBird key has exactly two sources: the user's OAuth grant props inside the Wo
 
 ## Branches in this fork
 
-- `deploy/cloudflare` is the default branch. It holds this file, the Worker and everything deployed.
-- `main` is a plain mirror of `upstream/main`, kept current with GitHub's Sync fork button. Nothing is developed or merged there, and it does not carry this file.
+- `main` is the default branch and the trunk. It holds this file, the Worker and everything deployed.
+- There is no mirror branch of upstream. Use the `upstream` remote (`git fetch upstream`) and cut `feat/*` and `fix/*` branches from `upstream/main`.
+- Upstream's `deploy-site.yml` is disabled in this fork's Actions settings. It deploys upstream's website on pushes to `main`, and this fork has no Vercel secrets for it.
 
 ## Fork divergence from upstream
 
-Upstream gitignores `CLAUDE.md` and its workspace guard (`scripts/workspace-guard.patterns`, run in CI) refuses to track it. `deploy/cloudflare` removes `CLAUDE.md` from both so this file can be committed. That edit is fork-only: it never goes into a `feat/*` branch, and when merging `upstream/main` keep the fork's version of those two files.
+Upstream gitignores `CLAUDE.md` and its workspace guard (`scripts/workspace-guard.patterns`, run in CI) refuses to track it. The fork's `main` removes `CLAUDE.md` from both so this file can be committed. That edit is fork-only: it never goes into a `feat/*` branch, and when merging `upstream/main` keep the fork's version of those two files.
