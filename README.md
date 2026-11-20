@@ -35,7 +35,7 @@ planner with USDA hardiness zones and companion-planting graph.
 | [`@pondlog/mcp-usgs`](./packages/mcp-usgs) | [![npm](https://img.shields.io/npm/v/@pondlog/mcp-usgs.svg)](https://www.npmjs.com/package/@pondlog/mcp-usgs) | USGS MCP server (4 tools) |
 | [`@pondlog/mcp-mushroomobserver`](./packages/mcp-mushroomobserver) | [![npm](https://img.shields.io/npm/v/@pondlog/mcp-mushroomobserver.svg)](https://www.npmjs.com/package/@pondlog/mcp-mushroomobserver) | Mushroom Observer MCP server (5 tools, mycology-first) |
 | [`@pondlog/mcp-garden`](./packages/mcp-garden) | [![npm](https://img.shields.io/npm/v/@pondlog/mcp-garden.svg)](https://www.npmjs.com/package/@pondlog/mcp-garden) | Garden-planning MCP server (8 tools, calendar + zones + companions + Trefle) |
-| [`@pondlog/mcp-pondlog`](./packages/mcp-pondlog) | [![npm](https://img.shields.io/npm/v/@pondlog/mcp-pondlog.svg)](https://www.npmjs.com/package/@pondlog/mcp-pondlog) | Aggregate MCP server (5 tools, all eight sources) |
+| [`@pondlog/mcp-pondlog`](./packages/mcp-pondlog) | [![npm](https://img.shields.io/npm/v/@pondlog/mcp-pondlog.svg)](https://www.npmjs.com/package/@pondlog/mcp-pondlog) | Aggregate MCP server (6 tools, all eight sources) |
 
 ## Status
 
