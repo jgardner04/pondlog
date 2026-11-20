@@ -120,6 +120,9 @@ Published as: `@pondlog/mcp-pondlog`
 ### Using an MCP server as a library
 Each of `mcp-ebird`, `mcp-pondlog`, `mcp-usgs`, `mcp-npn` and `mcp-mushroomobserver` has a side-effect-free root import that exports `buildServer()` and `registerAllTools()`, so the servers can be embedded (for example over HTTP, or several in one process) without starting stdio. The stdio server is the package's `bin`. `mcp-ebird` and `mcp-pondlog` accept `{ ebird }`, an eBird client from `createEbirdClient()`.
 
+### `packages/worker-remote`
+The five servers above as one Cloudflare Worker for use as a Claude custom connector, behind a single Code Mode `code` tool. Sign-in is GitHub OAuth limited to an allowlist, and each user adds their own eBird key, which is stored encrypted in the OAuth grant. Not published; each person deploys their own copy (see its README).
+
 ## Shared response types (in `packages/core`)
 
 ```typescript
