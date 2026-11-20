@@ -32,10 +32,6 @@ function joinList(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v.join(",") : v;
 }
 
-
-
-
-
 // 5. GET /ref/taxonomy/groups/{speciesGrouping}
 export type SpeciesGrouping = "merlin" | "ebird";
 
