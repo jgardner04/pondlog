@@ -171,11 +171,13 @@ async function main() {
     const tools = list.json?.result?.tools ?? [];
     check("exactly one tool, named code", tools.length === 1 && tools[0].name === "code", JSON.stringify(tools.map((t) => t.name)));
     const desc = tools[0]?.description ?? "";
-    const toolCount = (desc.match(/^\s+[a-z]+_[a-z0-9_]+: \(/gm) ?? []).length;
+    const toolCount = (desc.match(/^codemode\.[a-z0-9_]+\(/gm) ?? []).length;
     if (process.env.DUMP_DESC) (await import("node:fs")).writeFileSync(process.env.DUMP_DESC, desc);
     console.log(`INFO  code tool description: ${desc.length} chars (~${Math.round(desc.length / 4)} tokens by chars/4), ~${toolCount} tool signatures`);
     check("trimmed tools are absent", !/ebird_get_taxa_locales|pondlog_get_phenology|npn_get_station_count_by_state/.test(desc));
-    check("find_tide_stations is present", desc.includes("pondlog_find_tide_stations"));
+    check("find_tide_stations is present", desc.includes("codemode.pondlog_find_tide_stations("));
+    check("every upstream tool is listed", toolCount >= 35, `${toolCount} listed`);
+    check("code tool description is under 10k tokens (chars/4)", desc.length / 4 < 10_000);
     check("description does not contain the eBird key", !desc.includes(GOOD_KEY));
 
     const call = (id, code) => mcp(mf, tokens.access_token, { jsonrpc: "2.0", id, method: "tools/call", params: { name: "code", arguments: { code } } });

@@ -1,7 +1,10 @@
 import { DynamicWorkerExecutor, type Executor } from "@cloudflare/codemode";
 import { codeMcpServer } from "@cloudflare/codemode/mcp";
 import { createEbirdClient } from "@pondlog/source-ebird";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createLegacyMcpHandler } from "agents/mcp";
+import { renderListing, type ToolListing } from "./describe.js";
 import { isAllowed } from "./allowlist.js";
 import { parseLimit, withDailyCap } from "./cap.js";
 import { NO_KEY_MESSAGE } from "./ebird-key.js";
@@ -16,10 +19,34 @@ A successful call returns \`{ ok: true, data }\`. A failed call throws an Error 
 
 Plain JavaScript only: no TypeScript syntax, no imports.
 
-Available:
-{{types}}
+Tools (\`?\` marks an optional argument):
+
+{{listing}}
 
 {{example}}`;
+
+let listingPromise: Promise<string> | undefined;
+
+/**
+ * The tool listing is the same for every user (only the eBird key differs),
+ * so it is rendered once per isolate from a throwaway upstream server.
+ */
+export function toolListing(): Promise<string> {
+  listingPromise ??= (async () => {
+    const server = buildUpstream(createEbirdClient({ getApiKey: () => "" }));
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await server.connect(serverSide);
+    const client = new Client({ name: "pondlog-listing", version: "0" });
+    await client.connect(clientSide);
+    const { tools } = await client.listTools();
+    await client.close();
+    return renderListing(tools as ToolListing[]);
+  })().catch((error) => {
+    listingPromise = undefined;
+    throw error;
+  });
+  return listingPromise;
+}
 
 /** Builds the per-user MCP server: five upstream servers behind one `code` tool. */
 export async function buildCodeServer(options: { ebirdKey: string; executor: Executor }) {
@@ -27,10 +54,11 @@ export async function buildCodeServer(options: { ebirdKey: string; executor: Exe
     getApiKey: () => options.ebirdKey,
     missingKeyMessage: NO_KEY_MESSAGE,
   });
+  const listing = await toolListing();
   return codeMcpServer({
     server: buildUpstream(ebird),
     executor: options.executor,
-    description: CODE_DESCRIPTION,
+    description: CODE_DESCRIPTION.replace("{{listing}}", () => listing),
   });
 }
 
