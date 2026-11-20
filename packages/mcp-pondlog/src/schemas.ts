@@ -44,7 +44,7 @@ export const noaaStationField = z
   .string()
   .regex(/^[0-9]{6,8}$/)
   .describe(
-    "NOAA CO-OPS tide station id, 6–8 digits. Example: '9444090' (Port Angeles, WA). Find a nearby station at https://tidesandcurrents.noaa.gov/. Optional, when omitted (and NOAA_STATION env var unset) tides are skipped.",
+    "NOAA CO-OPS tide station id, 6–8 digits. Example: '9444090' (Port Angeles, WA). Use `find_tide_stations` to look one up near a location. Optional, when omitted (and NOAA_STATION env var unset) tides are skipped.",
   );
 
 export const usgsSiteField = z
@@ -77,3 +77,10 @@ export const mushroomObserverRegionField = z
   .describe(
     'Mushroom Observer region suffix string (e.g. "Clallam Co., Washington, USA"). Optional. When provided, the MO section uses suffix-match region filtering instead of bbox, useful when MO coverage at the bbox is sparse or when the caller wants county/state-wide fungi.',
   );
+
+export const limitField = z
+  .number()
+  .int()
+  .min(1)
+  .max(50)
+  .describe("Maximum results, nearest first. Default 5, maximum 50.");

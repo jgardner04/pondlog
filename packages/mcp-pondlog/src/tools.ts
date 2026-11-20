@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   err,
+  findTideStations,
   getTidePredictions,
   splitHighLow,
   type Coordinates,
@@ -22,6 +23,7 @@ import {
   dateField,
   ebirdApiKeyField,
   latField,
+  limitField,
   lngField,
   mushroomObserverRegionField,
   noaaStationField,
@@ -55,6 +57,7 @@ export function registerAllTools(server: McpServer, options: RegisterToolsOption
   registerGetWaterConditions(server);
   registerGetTonightSky(server);
   registerGetPhenology(server);
+  registerFindTideStations(server);
 }
 
 function registerGetNatureBriefing(server: McpServer, injected: EbirdSource | undefined): void {
@@ -297,6 +300,33 @@ function registerGetPhenology(server: McpServer): void {
         coords: { lat: args.lat, lng: args.lng },
         radiusKm: args.radius_km ?? 50,
         ...(args.years_back !== undefined ? { yearsBack: args.years_back } : {}),
+      });
+      return result.ok ? success(result.data) : failure(result.error);
+    },
+  );
+}
+
+function registerFindTideStations(server: McpServer): void {
+  server.registerTool(
+    "find_tide_stations",
+    {
+      title: "Find NOAA Tide Stations Near a Location",
+      description:
+        "Returns NOAA CO-OPS tide-prediction stations nearest a lat/lng, nearest first, with id, name, state, coordinates, distance in km, and kind (`reference` = harmonic station, `subordinate` = predictions offset from a reference station; both work for tides). " +
+        "Use it to get the `noaa_station` id for `get_water_conditions` or `get_nature_briefing` when the caller names a place rather than a station. Coverage is US coasts, the Great Lakes, and US territories. No API key required.",
+      inputSchema: {
+        lat: latField,
+        lng: lngField,
+        radius_km: radiusField.optional().describe("Search radius in km. Default 50, maximum 500."),
+        limit: limitField.optional(),
+      },
+      annotations: READ_ONLY,
+    },
+    async (args) => {
+      const result = await findTideStations({
+        coords: { lat: args.lat, lng: args.lng },
+        ...(args.radius_km !== undefined ? { radiusKm: args.radius_km } : {}),
+        ...(args.limit !== undefined ? { limit: args.limit } : {}),
       });
       return result.ok ? success(result.data) : failure(result.error);
     },

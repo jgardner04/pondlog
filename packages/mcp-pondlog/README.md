@@ -33,7 +33,7 @@ sections are skipped gracefully when their key/station is unset.
 | Env var | What it enables | Required? | How to get one |
 |---------|----------------|-----------|----------------|
 | `EBIRD_API_KEY` | eBird observations in the briefing | Optional | Free at [ebird.org/api/keygen](https://ebird.org/api/keygen) |
-| `NOAA_STATION` | Tide predictions (6 to 8 digit station id) | Optional | Look up at [tidesandcurrents.noaa.gov](https://tidesandcurrents.noaa.gov) |
+| `NOAA_STATION` | Tide predictions (6 to 8 digit station id) | Optional | Look up with the `find_tide_stations` tool, or at [tidesandcurrents.noaa.gov](https://tidesandcurrents.noaa.gov) |
 | `USGS_SITE` | Streamflow (8 to 15 digit site number) | Optional | Look up at [waterdata.usgs.gov](https://waterdata.usgs.gov) |
 
 `noaa_station`, `usgs_site`, and `ebird_api_key` can also be passed per
@@ -60,7 +60,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
 }
 ```
 
-Restart Claude Desktop. Five tools will appear in the slash menu.
+Restart Claude Desktop. Six tools will appear in the slash menu.
 
 ### Cursor
 
@@ -99,6 +99,7 @@ All tools are read-only. Coordinates use WGS84 decimal degrees.
 | `get_water_conditions` | Streamflow + tide predictions, both keys always present. | USGS + NOAA |
 | `get_tonight_sky` | Sun, moon, planets, meteor showers, dark-sky window, constellations. | astronomy-engine (pure local computation) |
 | `get_phenology` | What's blooming / leafing out near you. | USA-NPN |
+| `find_tide_stations` | NOAA tide stations nearest a point, to pick a `noaa_station` id. | NOAA CO-OPS metadata |
 
 ### Per-source tools
 

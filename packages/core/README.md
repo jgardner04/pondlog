@@ -28,6 +28,10 @@ npm install @pondlog/core
   `parseLatLngString` (handles iNat's `"lat,lng"` format).
 - **`PONDLOG_USER_AGENT`**: canonical user-agent string for every HTTP
   request from a pondlog source client.
+- **NOAA tides** (the one network client here): `getTidePredictions` for
+  hi/lo predictions at a station, `splitHighLow`, and `findTideStations`
+  to find the nearest tide-prediction stations to a point (station list
+  cached in memory for a day).
 ## Garden planning data has moved
 
 Garden planning data (crop calendar, companion planting, USDA hardiness
