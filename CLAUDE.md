@@ -15,12 +15,23 @@ Generic improvements any pondlog user would want, for example per-request eBird 
 - Existing stdio behaviour keeps working, and so does the `process.env.EBIRD_API_KEY` fallback.
 - Ships with tests.
 - Matches the repo's existing style: conventional commit subjects scoped by package (`feat(source-ebird): ...`), `Result<T>` returns instead of throws, Zod-validated responses.
-- Cloudflare-specific code stays out: no Worker types, Wrangler, OAuth or Code Mode imports.
+- Cloudflare-specific code stays out of every branch except `feat/worker-remote`: no Worker types, Wrangler, OAuth or Code Mode imports.
 - Each branch becomes one PR to `andrewschristison/pondlog`, opened only after the owner reviews it.
+- No CHANGELOG entries on these branches. Each PR description ends with a "Suggested changelog entry" section the upstream maintainer can copy.
+
+### The upstream Worker branch
+
+`feat/worker-remote` offers `packages/worker-remote` upstream, for the maintainer to take or decline. It is stacked on `feat/export-build-server` and carries the same package as `deploy/cloudflare` with nothing specific to this deployment: `wrangler.jsonc` has a placeholder KV id and an empty `ALLOWED_GITHUB_IDS`, and the tests use made-up GitHub IDs. Port Worker changes to it after they land on `deploy/cloudflare`.
 
 ### Fork-only changes
 
-Everything Cloudflare (the Worker, Wrangler config, OAuth, Code Mode) lives in `packages/worker-remote` on the `deploy/cloudflare` branch. `deploy/cloudflare` merges in the `feat/*` branches it depends on.
+Everything Cloudflare (the Worker, Wrangler config, OAuth, Code Mode) lives in `packages/worker-remote` on the `deploy/cloudflare` branch. `deploy/cloudflare` merges in the `feat/*` and `fix/*` branches it depends on. Its `wrangler.jsonc` keeps this deployment's real KV id and allowlist; never bring the placeholders from `feat/worker-remote` into it.
+
+### Deploying
+
+- Cloudflare Workers Builds deploys every push to `deploy/cloudflare`. A merge is a deploy, so the owner's merge is the deploy approval.
+- A GitHub ruleset on `deploy/cloudflare` requires a pull request and the `deploy-checks` job (`.github/workflows/deploy-checks.yml`, fork-only), and blocks force pushes. Never push to it directly. Put each change on a short-lived branch (`chore/*`, `docs/*`, or a `fix/*` that also goes upstream) and open a PR into `deploy/cloudflare`.
+- Don't deploy with a local `wrangler deploy` unless the owner asks. It bundles whatever `dist/` folders are on disk, which once shipped stale code.
 
 ## Syncing upstream
 
@@ -31,11 +42,13 @@ Everything Cloudflare (the Worker, Wrangler config, OAuth, Code Mode) lives in `
 
 ## Scope
 
-Change only the five servers above, their source clients (`source-ebird`, `source-usgs`, `source-npn`, `source-mushroomobserver`, plus `source-inaturalist` and `source-nightsky`, which `mcp-pondlog` also uses), and `core`. Every other package stays as upstream has it. `mcp-garden` is deprecated upstream; leave it alone.
+Change only the five servers above, their source clients (`source-ebird`, `source-usgs`, `source-npn`, `source-mushroomobserver`, plus `source-inaturalist` and `source-nightsky`, which `mcp-pondlog` also uses), `core`, `worker-remote`, and the root files the Worker needs (`package.json` scripts, `pnpm-workspace.yaml`, the lockfile) plus `docs/ARCHITECTURE.md` and the root README where a change makes them wrong. Every other package stays as upstream has it. `mcp-garden` is deprecated upstream; leave it alone.
 
 ## Commands
 
 Use the root `package.json` scripts (`build`, `typecheck`, `test`); each fans out to the packages with `pnpm -r`. Smoke tests that hit live APIs are excluded from `test` and run per package with `smoke`.
+
+For the Worker: `pnpm build:worker` builds it and the packages it depends on, `pnpm --filter @pondlog/worker-remote test` runs its unit tests, and `pnpm --filter @pondlog/worker-remote e2e` runs the whole connector flow offline in local workerd. The e2e also fails if the `code` tool's description passes about 10k tokens. `pnpm deploy:worker` is what Workers Builds runs.
 
 ## Secrets
 
