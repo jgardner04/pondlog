@@ -25,8 +25,8 @@ type Register = (server: never, options?: never) => void;
 const SENTENCE_BREAK = /(?<!\b(?:e\.g|i\.e|etc|vs|Co)\.)(?<=[.!?])\s+(?=[A-Z(`'"]|[ei][A-Z])/;
 
 /**
- * Shortens a description for the `code` tool's type listing, which Code Mode
- * prints in full (each parameter twice) on every request. Keeps the first
+ * Shortens a description for the `code` tool's listing, which is sent on
+ * every request. Keeps the first
  * `sentences` sentences plus short "Default ..." notes and short pointers to
  * other tools, and drops examples.
  */
