@@ -11,7 +11,7 @@ import { getDarkSkyWindow } from "./darksky.js";
 import { getActiveMeteorShowers } from "./meteors.js";
 import { getMoonPhase } from "./moon.js";
 import { getPlanetPositions } from "./planets.js";
-import { getSunTimes, guardCoords, resolveDate, searchStart } from "./sun.js";
+import { getSunTimes, guardCoords, reportedDate, resolveDate, searchStart } from "./sun.js";
 import type {
   MeteorShower,
   NightSkyBriefing,
@@ -68,7 +68,7 @@ export function getTonightsBriefing(
   const visibleConstellations = constellations.data.visible.slice(0, 8);
 
   return ok({
-    date: date.data.toISOString(),
+    date: reportedDate(params.date, date.data),
     referenceTime: referenceTime.toISOString(),
     coordinates: params.coords,
     sun: sun.data,
