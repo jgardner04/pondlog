@@ -43,6 +43,16 @@ export function searchStart(
   return new Date(utcMidnight + (hoursAfterMidnight - offsetHours) * 3_600_000);
 }
 
+/**
+ * The `date` a result reports. A date-only input is a calendar day at the
+ * coordinates, so it is echoed back as that day ("2026-11-21") rather than
+ * as UTC midnight, which reads as the wrong day west of Greenwich. Any other
+ * input is an instant and is reported as ISO 8601.
+ */
+export function reportedDate(input: Date | string | undefined, resolved: Date): string {
+  return typeof input === "string" && DATE_ONLY_RE.test(input) ? input : resolved.toISOString();
+}
+
 export function getSunTimes(params: GetSunTimesParams): Result<SunTimes> {
   const guard = guardCoords(params.coords);
   if (!guard.ok) return guard;
@@ -80,7 +90,7 @@ export function getSunTimes(params: GetSunTimesParams): Result<SunTimes> {
   const goldenHourEveningStart = altitudeIso(Body.Sun, observer, -1, start, 6);
 
   return ok({
-    date: date.data.toISOString(),
+    date: reportedDate(params.date, date.data),
     coordinates: params.coords,
     sunrise: sunrise ? sunrise.date.toISOString() : null,
     sunset: sunset ? sunset.date.toISOString() : null,

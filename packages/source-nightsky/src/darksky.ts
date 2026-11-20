@@ -9,7 +9,7 @@ import {
   SearchAltitude,
   SearchRiseSet,
 } from "astronomy-engine";
-import { guardCoords, resolveDate, searchStart } from "./sun.js";
+import { guardCoords, reportedDate, resolveDate, searchStart } from "./sun.js";
 import type { DarkSkyWindow } from "./types.js";
 
 export interface GetDarkSkyWindowParams {
@@ -79,7 +79,7 @@ export function getDarkSkyWindow(
   });
 
   return ok({
-    date: date.data.toISOString(),
+    date: reportedDate(params.date, date.data),
     coordinates: params.coords,
     start: startIso,
     end: endIso,

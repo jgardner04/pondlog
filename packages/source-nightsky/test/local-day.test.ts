@@ -56,3 +56,19 @@ describe("date-only input means the local calendar day", () => {
     expect(r.ok && localDay(r.data.sunset, PLACES[0]!.coords.lng)).toBe("2026-11-20");
   });
 });
+
+describe("reported date", () => {
+  const coords = { lat: 48.406, lng: -122.643 };
+  it("echoes a date-only input as that calendar day", () => {
+    const sun = getSunTimes({ coords, date: "2026-11-21" });
+    const dark = getDarkSkyWindow({ coords, date: "2026-11-21" });
+    const brief = getTonightsBriefing({ coords, date: "2026-11-21" });
+    expect(sun.ok && sun.data.date).toBe("2026-11-21");
+    expect(dark.ok && dark.data.date).toBe("2026-11-21");
+    expect(brief.ok && brief.data.date).toBe("2026-11-21");
+  });
+  it("keeps an instant as ISO 8601", () => {
+    const sun = getSunTimes({ coords, date: "2026-11-21T20:00:00Z" });
+    expect(sun.ok && sun.data.date).toBe("2026-11-21T20:00:00.000Z");
+  });
+});

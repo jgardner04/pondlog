@@ -100,7 +100,9 @@ full timestamp keeps the "next events after this instant" meaning, so
 20th.
 
 All times in the response are UTC ISO 8601. Consumers handle local
-display.
+display. The one exception is the result's own `date` field: a date-only
+input is echoed back unchanged (`"2026-11-21"`), so it names the local day
+the results are for instead of reading as UTC midnight.
 
 ## Data fixtures
 
