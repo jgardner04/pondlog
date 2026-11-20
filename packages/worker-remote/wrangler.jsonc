@@ -17,7 +17,7 @@
   "worker_loaders": [{ "binding": "LOADER" }],
   "kv_namespaces": [
     // Replace the id with the one `wrangler kv namespace create OAUTH_KV` prints.
-    { "binding": "OAUTH_KV", "id": "REPLACE_WITH_YOUR_KV_NAMESPACE_ID" }
+    { "binding": "OAUTH_KV", "id": "ee5d28dfa1064805abaea33df9f3bc84" }
   ],
   "vars": {
     // Comma-separated numeric GitHub user IDs allowed to sign in.
