@@ -6,8 +6,7 @@ name: Deploy checks
 
 on:
   pull_request:
-    # deploy/cloudflare stays listed until the branch rename is done.
-    branches: [main, deploy/cloudflare]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
