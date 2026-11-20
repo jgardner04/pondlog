@@ -10,7 +10,7 @@ Every change is either **upstream** or **fork-only**. Decide which before writin
 
 Generic improvements any pondlog user would want, for example per-request eBird key injection, exporting `buildServer()`, the `@modelcontextprotocol/sdk` bump, per-key rate limiting.
 
-- One `feat/*` branch per change, cut from `upstream/main` (never from the fork's `main`, which carries this file).
+- One `feat/*` branch per change, cut from `upstream/main` (never from `deploy/cloudflare`, which carries this file and the Worker).
 - Touch only the packages the change needs.
 - Existing stdio behaviour keeps working, and so does the `process.env.EBIRD_API_KEY` fallback.
 - Ships with tests.
@@ -54,6 +54,11 @@ For the Worker: `pnpm build:worker` builds it and the packages it depends on, `p
 
 An eBird key has exactly two sources: the user's OAuth grant props inside the Worker, or `process.env.EBIRD_API_KEY` for local stdio. Keys stay out of logs, tool results, error messages, URLs, query strings, and any code or bindings passed into the Code Mode sandbox. The key travels in the `X-eBirdApiToken` request header and nowhere else.
 
+## Branches in this fork
+
+- `deploy/cloudflare` is the default branch. It holds this file, the Worker and everything deployed.
+- `main` is a plain mirror of `upstream/main`, kept current with GitHub's Sync fork button. Nothing is developed or merged there, and it does not carry this file.
+
 ## Fork divergence from upstream
 
-Upstream gitignores `CLAUDE.md` and its workspace guard (`scripts/workspace-guard.patterns`, run in CI) refuses to track it. The fork's `main` removes `CLAUDE.md` from both so this file can be committed. That edit is fork-only: it never goes into a `feat/*` branch, and when merging `upstream/main` keep the fork's version of those two files.
+Upstream gitignores `CLAUDE.md` and its workspace guard (`scripts/workspace-guard.patterns`, run in CI) refuses to track it. `deploy/cloudflare` removes `CLAUDE.md` from both so this file can be committed. That edit is fork-only: it never goes into a `feat/*` branch, and when merging `upstream/main` keep the fork's version of those two files.
